@@ -1,20 +1,16 @@
 import torch
 import torch.utils.data as data
 from time import time
-
 import os, math, random, re
 from os.path import *
 import numpy as np
-
 from glob import glob
-
 from scipy import ndimage
 import cv2
 from cv2 import imread
 
 import flow_transform
 
-# __all__ = ['VirtualKITTI']
 
 class StaticRandomCrop(object):
     def __init__(self, image_size, crop_size):
@@ -32,77 +28,6 @@ class StaticCenterCrop(object):
     def __call__(self, img):
         return img[(self.h-self.th)//2:(self.h+self.th)//2, (self.w-self.tw)//2:(self.w+self.tw)//2,:]
 
-# class Scale(object):
-#     def __init__(self, image_size, crop_size):
-#         self.th, self.tw = crop_size
-#         self.h, self.w = image_size
-#         # if (self.h * 0.5 < self.th) or (self.w * 0.5 < self.tw):
-#         #     self.ratio = max(self.th / self.h, self.tw / self.w)
-#         # else:
-#         self.ratio = np.random.uniform(max(self.th / self.h, self.tw / self.w)+0.1, 2)
-
-#     def __call__(self, img, choice):
-#         chanel1 = ndimage.interpolation.zoom(img[:,:,0], self.ratio, order=2)
-#         chanel2 = ndimage.interpolation.zoom(img[:,:,1], self.ratio, order=2)
-#         if choice:
-#             img = np.dstack([chanel1, chanel2])
-#             img *= self.ratio
-#         else:
-#             chanel3 = ndimage.interpolation.zoom(img[:,:,2], self.ratio, order=2)
-#             img = np.dstack([chanel1, chanel2, chanel3])
-#         return img
-
-# class RandomHorizontalFlip(object):
-#     def __init__(self):
-#         self.rand = random.randint(0,1)
-#     def __call__(self, img, choice):
-#         if self.rand:
-#             img = np.copy(np.fliplr(img))
-#             if choice:
-#                 img[:,:,0] = -1 * img[:,:,0]
-#         return img
-
-# class RandomVerticalFlip(object):
-#     def __init__(self):
-#         self.rand = random.randint(0,1)
-#     def __call__(self, img, choice):
-#         if self.rand:
-#             img = np.copy(np.flipud(img))
-#             if choice:
-#                 img[:,:,1] = -1 * img[:,:,1]
-#         return img
-
-# class RandomRotate(object):
-#     def __init__(self):
-#         self.angle = random.uniform(-180, 180)
-#     def __call__(self, img, choice):
-#         angle_rad = self.angle*np.pi/180
-#         img = ndimage.interpolation.rotate(img, self.angle, reshape=False, order=2)
-#         if choice:
-#             img_ = np.copy(img)
-#             img[:,:,0] = np.cos(angle_rad)*img_[:,:,0] + np.sin(angle_rad)*img_[:,:,1]
-#             img[:,:,1] = -np.sin(angle_rad)*img_[:,:,0] + np.cos(angle_rad)*img_[:,:,1]
-#         return img
-
-# class RandomTranslate(object):
-#     def __init__(self):
-#         self.translation=[50,100]
-#     def __call__(self, inputs, target):
-#         h, w, _ = inputs[0].shape
-#         th, tw = self.translation
-#         tw = random.randint(-tw, tw)
-#         th = random.randint(-th, th)
-#         if tw == 0 and th == 0:
-#             return inputs, target
-#         x1,x2,x3,x4 = max(0,tw), min(w+tw,w), max(0,-tw), min(w-tw,w)
-#         y1,y2,y3,y4 = max(0,th), min(h+th,h), max(0,-th), min(h-th,h)
-#         inputs[0] = inputs[0][y1:y2,x1:x2]
-#         inputs[1] = inputs[1][y3:y4,x3:x4]
-#         target = target[y1:y2,x1:x2]
-#         target[:,:,0] += tw
-#         target[:,:,1] += th
-#         return inputs, target
-
 class FlyingChairs(data.Dataset):
     def __init__(self, is_augment=False, root = '/path/to/FlyingChairs_release/data'):
         self.augmentation = flow_transform.Compose([
@@ -117,7 +42,6 @@ class FlyingChairs(data.Dataset):
             # flow_transform.HueAdjust(-0.2, 0.2)
             ])
         self.is_augment = is_augment
-        # self.crop_size = [384, 448]
 
         images = sorted(glob(join(root, '*.ppm')))
 
@@ -146,10 +70,10 @@ class FlyingChairs(data.Dataset):
         img2 = read_gen(self.image_list[index][1])
 
         # add fog
-        # atmosphere = np.exp(-np.random.uniform(1,3))
-        # scatter = np.random.uniform(50,150)
-        # img1 = img1 * atmosphere + scatter * (1 - atmosphere)
-        # img2 = img2 * atmosphere + scatter * (1 - atmosphere)
+        atmosphere = np.exp(-np.random.uniform(1,3))
+        scatter = np.random.uniform(50,150)
+        img1 = img1 * atmosphere + scatter * (1 - atmosphere)
+        img2 = img2 * atmosphere + scatter * (1 - atmosphere)
 
         flow = readFlow(self.flow_list[index])
 
@@ -243,22 +167,22 @@ class FlyingThings(data.Dataset):
         img1 = read_gen(self.image_list[index][0])
         img2 = read_gen(self.image_list[index][1])
 
-        # dept1, _ = readPFM(self.depth_list[index][0])
-        # dept1 = dept1[:,:,np.newaxis]
-        # dept2, _ = readPFM(self.depth_list[index][1])
-        # dept2 = dept2[:,:,np.newaxis]
+        dept1, _ = readPFM(self.depth_list[index][0])
+        dept1 = dept1[:,:,np.newaxis]
+        dept2, _ = readPFM(self.depth_list[index][1])
+        dept2 = dept2[:,:,np.newaxis]
 
-        # dept1 = 1 / (dept1 + 0.001)
-        # dept2 = 1 / (dept2 + 0.001)
+        dept1 = 1 / (dept1 + 0.001)
+        dept2 = 1 / (dept2 + 0.001)
 
         # add fog
-        # b = np.random.uniform(1, 3)
-        # scatter = np.random.uniform(50,150)
+        b = np.random.uniform(1, 3)
+        scatter = np.random.uniform(50,150)
 
-        # atmosphere1 = np.exp(-b * dept1)
-        # atmosphere2 = np.exp(-b * dept2)
-        # img1 = np.clip(img1 * atmosphere1 + scatter * (1 - atmosphere1), 0, 255)
-        # img2 = np.clip(img2 * atmosphere2 + scatter * (1 - atmosphere2), 0, 255)
+        atmosphere1 = np.exp(-b * dept1)
+        atmosphere2 = np.exp(-b * dept2)
+        img1 = np.clip(img1 * atmosphere1 + scatter * (1 - atmosphere1), 0, 255)
+        img2 = np.clip(img2 * atmosphere2 + scatter * (1 - atmosphere2), 0, 255)
 
         flow, _ = readPFM(self.flow_list[index])
         flow = flow[:,:,0:2]
@@ -423,27 +347,6 @@ class MpiSintel(data.Dataset):
 
             self.image_list += [[img1, img2]]
             self.flow_list += [file]
-
-        # num = 0
-        # for file in file_list:
-        #     if 'test' in file:
-        #         continue
-
-        #     fbase = file[len(flow_root)+1:-14]
-        #     fbase_num = int(file[-8:-4])
-        #     if fbase_num == 1:
-        #         num = num+1
-
-        #     img1 = join(image_root, fbase + "%06d"%(num) + '.png')
-        #     img2 = join(image_root, fbase + "%06d"%(num+1) + '.png')
-
-        #     num = num + 1
-
-        #     if not isfile(img1) or not isfile(img2) or not isfile(file):
-        #         continue
-
-        #     self.image_list += [[img1, img2]]
-        #     self.flow_list += [file]
 
         self.size = len(self.image_list)
 
