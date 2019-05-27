@@ -4,9 +4,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 from correlation_package.correlation import Correlation
-
-# from spatial_correlation_sampler import SpatialCorrelationSampler
-
 import cv2
 
 import os
