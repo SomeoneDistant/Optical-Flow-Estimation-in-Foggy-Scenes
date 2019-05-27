@@ -4,103 +4,13 @@ import torch.utils.data as data
 import os, math, random
 from os.path import *
 import numpy as np
-
 from glob import glob
-
 from scipy import ndimage
 import cv2
 from cv2 import imread
 
 import flow_transform
 
-# __all__ = ['VirtualKITTI']
-
-# class StaticRandomCrop(object):
-#     def __init__(self, image_size, crop_size):
-#         self.th, self.tw = crop_size
-#         h, w = image_size
-#         self.h1 = random.randint(0, h - self.th)
-#         self.w1 = random.randint(0, w - self.tw)
-#     def __call__(self, img):
-#         return img[self.h1:(self.h1+self.th), self.w1:(self.w1+self.tw),:]
-
-# class StaticCenterCrop(object):
-#     def __init__(self, image_size, crop_size):
-#         self.th, self.tw = crop_size
-#         self.h, self.w = image_size
-#     def __call__(self, img):
-#         return img[(self.h-self.th)//2:(self.h+self.th)//2, (self.w-self.tw)//2:(self.w+self.tw)//2,:]
-
-# class Scale(object):
-#     def __init__(self, image_size, crop_size):
-#         self.th, self.tw = crop_size
-#         self.h, self.w = image_size
-#         # if (self.h * 0.5 < self.th) or (self.w * 0.5 < self.tw):
-#         #     self.ratio = max(self.th / self.h, self.tw / self.w)
-#         # else:
-#         self.ratio = np.random.uniform(max(self.th / self.h, self.tw / self.w)+0.1, 2)
-
-#     def __call__(self, img, choice):
-#         chanel1 = ndimage.interpolation.zoom(img[:,:,0], self.ratio, order=2)
-#         chanel2 = ndimage.interpolation.zoom(img[:,:,1], self.ratio, order=2)
-#         if choice:
-#             img = np.dstack([chanel1, chanel2])
-#             img *= self.ratio
-#         else:
-#             chanel3 = ndimage.interpolation.zoom(img[:,:,2], self.ratio, order=2)
-#             img = np.dstack([chanel1, chanel2, chanel3])
-#         return img
-
-# class RandomHorizontalFlip(object):
-#     def __init__(self):
-#         self.rand = random.randint(0,1)
-#     def __call__(self, img, choice):
-#         if self.rand:
-#             img = np.copy(np.fliplr(img))
-#             if choice:
-#                 img[:,:,0] = -1 * img[:,:,0]
-#         return img
-
-# class RandomVerticalFlip(object):
-#     def __init__(self):
-#         self.rand = random.randint(0,1)
-#     def __call__(self, img, choice):
-#         if self.rand:
-#             img = np.copy(np.flipud(img))
-#             if choice:
-#                 img[:,:,1] = -1 * img[:,:,1]
-#         return img
-
-# class RandomRotate(object):
-#     def __init__(self):
-#         self.angle = random.uniform(-180, 180)
-#     def __call__(self, img, choice):
-#         angle_rad = self.angle*np.pi/180
-#         img = ndimage.interpolation.rotate(img, self.angle, reshape=False, order=2)
-#         if choice:
-#             img_ = np.copy(img)
-#             img[:,:,0] = np.cos(angle_rad)*img_[:,:,0] + np.sin(angle_rad)*img_[:,:,1]
-#             img[:,:,1] = -np.sin(angle_rad)*img_[:,:,0] + np.cos(angle_rad)*img_[:,:,1]
-#         return img
-
-# class RandomTranslate(object):
-#     def __init__(self):
-#         self.translation=[50,100]
-#     def __call__(self, inputs, target):
-#         h, w, _ = inputs[0].shape
-#         th, tw = self.translation
-#         tw = random.randint(-tw, tw)
-#         th = random.randint(-th, th)
-#         if tw == 0 and th == 0:
-#             return inputs, target
-#         x1,x2,x3,x4 = max(0,tw), min(w+tw,w), max(0,-tw), min(w-tw,w)
-#         y1,y2,y3,y4 = max(0,th), min(h+th,h), max(0,-th), min(h-th,h)
-#         inputs[0] = inputs[0][y1:y2,x1:x2]
-#         inputs[1] = inputs[1][y3:y4,x3:x4]
-#         target = target[y1:y2,x1:x2]
-#         target[:,:,0] += tw
-#         target[:,:,1] += th
-#         return inputs, target
 
 class FlyingChairs(data.Dataset):
     def __init__(self, is_augment=True, root = '/path/to/FlyingChairs_release/data'):
@@ -274,12 +184,6 @@ class VirtualKITTI(data.Dataset):
 
         self.frame_size = read_gen(self.image_list[0][0]).shape
 
-        # if (self.render_size[0] < 0) or (self.render_size[1] < 0) or (self.frame_size[0]%64) or (self.frame_size[1]%64):
-        #     self.render_size[0] = ( (self.frame_size[0])//64 ) * 64
-        #     self.render_size[1] = ( (self.frame_size[1])//64 ) * 64
-
-        # args.inference_size = self.render_size
-
         assert (len(self.image_list) == len(self.flow_list))
 
     def __getitem__(self, index):
@@ -291,11 +195,6 @@ class VirtualKITTI(data.Dataset):
 
         flow = read_vkitti_png_flow(self.flow_list[index])
         images = [img1, img2]
-
-        # if self.is_cropped and random.randint(0, 1):
-        #     rotator = RandomRotate()
-        #     images = list(map(rotator, images, [0, 0]))
-        #     flow = rotator(flow, 1)
 
         if self.is_cropped and random.randint(0, 1):
             translater = RandomTranslate()
@@ -368,28 +267,6 @@ class FoggyZurich(data.Dataset):
 
         images = [img1, img2]
 
-        # if self.is_cropped and random.randint(0, 1):
-        #     rotator = RandomRotate()
-        #     images = list(map(rotator, images, [0, 0]))
-        #     flow = rotator(flow, 1)
-
-        # if self.is_cropped and random.randint(0, 1):
-        #     translater = RandomTranslate()
-        #     images, flow = translater(images, flow)
-
-        # if self.is_cropped:
-        #     flipper1 = RandomHorizontalFlip()
-        #     images = list(map(flipper1, images, [0, 0]))
-        #     flow = flipper1(flow, 1)
-        #     flipper2 = RandomVerticalFlip()
-        #     images = list(map(flipper2, images, [0, 0]))
-        #     flow = flipper2(flow, 1)
-
-        # if self.is_cropped and random.randint(0, 1):
-        #     scaler = Scale(images[0].shape[:2], self.crop_size)
-        #     images = list(map(scaler, images, [0, 0]))
-        #     flow = scaler(flow, 1)
-
         assert (images[0].shape[:2] == images[1].shape[:2])
 
         image_size = images[0].shape[:2]
@@ -407,93 +284,6 @@ class FoggyZurich(data.Dataset):
 
     def __len__(self):
         return self.size * self.replicates
-
-# class VK_FZ(data.Dataset):
-#     def __init__(self, is_cropped = True, VK_root = '', FZ_root = '', replicates = 1):
-#         self.is_cropped = is_cropped
-#         self.crop_size_VK = [256, 256]
-#         self.crop_size_FZ = [1024, 1024]
-#         self.replicates = replicates
-
-#         VK_flow_root = join(VK_root, 'vkitti_1.3.1_flowgt')
-#         VK_image_root = join(VK_root, 'vkitti_1.3.1_rgb')
-
-#         file_list = sorted(glob(join(flow_root, '*/*.png')))
-
-#         self.flow_list = []
-#         self.image_list = []
-
-#         for file in file_list:
-#             fbase = file[-14:]
-#             fnum = int(file[-9:-4])
-#             img1 = join(image_root, file[-14:])
-#             img2 = join(image_root, file[-14:-9]+"%05d"%(fnum+1) + '.png')
-
-#             if not isfile(img1) or not isfile(img2) or not isfile(file):
-#                 continue
-
-#             self.image_list += [[img1, img2]]
-#             self.flow_list += [file]
-
-#         self.size = len(self.image_list)
-
-#         self.frame_size = read_gen(self.image_list[0][0]).shape
-
-#         assert (len(self.image_list) == len(self.flow_list))
-
-#     def __getitem__(self, index):
-
-#         index = index % self.size
-
-#         img1 = read_gen(self.image_list[index][0])
-#         img2 = read_gen(self.image_list[index][1])
-
-#         flow = read_vkitti_png_flow(self.flow_list[index])
-#         images = [img1, img2]
-
-#         # if self.is_cropped and random.randint(0, 1):
-#         #     rotator = RandomRotate()
-#         #     images = list(map(rotator, images, [0, 0]))
-#         #     flow = rotator(flow, 1)
-
-#         if self.is_cropped and random.randint(0, 1):
-#             translater = RandomTranslate()
-#             images, flow = translater(images, flow)
-
-#         if self.is_cropped:
-#             flipper1 = RandomHorizontalFlip()
-#             images = list(map(flipper1, images, [0, 0]))
-#             flow = flipper1(flow, 1)
-#             flipper2 = RandomVerticalFlip()
-#             images = list(map(flipper2, images, [0, 0]))
-#             flow = flipper2(flow, 1)
-
-#         if self.is_cropped and random.randint(0, 1):
-#             scaler = Scale(images[0].shape[:2], self.crop_size)
-#             images = list(map(scaler, images, [0, 0]))
-#             flow = scaler(flow, 1)
-
-#         assert (images[0].shape[:2] == images[1].shape[:2])
-
-#         image_size = images[0].shape[:2]
-
-#         if self.is_cropped:
-#             cropper = StaticRandomCrop(image_size, self.crop_size)
-#             images = list(map(cropper, images))
-#             flow = cropper(flow)
-#         # else:
-#             # cropper = StaticCenterCrop(image_size, self.render_size)
-
-#         images = np.array(images).transpose(3,0,1,2)
-#         flow = flow.transpose(2,0,1)
-
-#         images = torch.from_numpy(images.astype(np.float32))
-#         flow = torch.from_numpy(flow.astype(np.float32))
-
-#         return [images], [flow]
-
-#     def __len__(self):
-#         return self.size * self.replicates
 
 def read_vkitti_png_flow(flow_fn):
     bgr = imread(flow_fn, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
